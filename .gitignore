@@ -26,6 +26,7 @@ pyvenv.cfg
 # ===== 运行产物 =====
 *.mp4
 *.avi
+shot_*.jpg
 runs/
 output/
 predict*/

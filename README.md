@@ -2,7 +2,7 @@
 
 基于 **Ultralytics YOLO11** 的极简实时检测项目：打开电脑摄像头，实时框出画面里的物品，标注**类别**与**置信度**，按 `q` / `ESC` 即可退出。
 
-核心代码只有 **16 行**，适合学习 YOLO 推理流程、做课程作业或二次开发。
+核心代码只有 **34 行**（含实时 FPS 与截图），适合学习 YOLO 推理流程、做课程作业或二次开发。
 
 ![运行效果](assets/demo.jpg)
 
@@ -15,6 +15,8 @@
 - ✅ 调用电脑**内置摄像头**或**外接 USB 摄像头**，实时读取视频画面
 - ✅ 使用 **YOLO11n 预训练模型**检测画面中的常见物品（COCO 80 类）
 - ✅ 绘制**检测框 + 类别名 + 置信度**
+- ✅ 左上角实时显示 **FPS**（指数平滑，读数稳定）
+- ✅ 按 `s` 一键**截图**，保存为 `shot_时间戳.jpg`
 - ✅ 按 `q` / `ESC` **正常退出**，自动释放摄像头
 - ✅ 额外提供完整版 `detect_full.py`：支持指定摄像头编号、读视频文件、录制结果、按类别过滤
 
@@ -34,7 +36,7 @@
 | 硬件 | 无独立显卡，CPU 推理；内置摄像头 `/dev/video0` |
 | 桌面会话 | Wayland（OpenCV 的 Qt 走 XWayland） |
 
-> 有 NVIDIA 显卡时把 PyTorch 换成 CUDA 版（见「依赖说明」），帧率可从 6–9 FPS 提升到 30+ FPS。
+> 有 NVIDIA 显卡时把 PyTorch 换成 CUDA 版（见「依赖说明」），帧率可提升到 30+ FPS。
 
 ---
 
@@ -42,7 +44,7 @@
 
 ```
 .
-├── detect.py            # 主程序（16 行，极简版）
+├── detect.py            # 主程序（34 行）
 ├── detect_full.py       # 完整版：命令行参数 / 录像 / 类别过滤 / 无窗口模式
 ├── run.sh               # 一键启动（自动激活 conda 环境）
 ├── download_model.sh    # 下载模型权重（官方源失败自动切镜像）
@@ -115,27 +117,50 @@ python detect.py
 ./run.sh
 ```
 
-**退出方式**：在视频窗口按 `q` 或 `ESC`。
+**快捷键**：
+
+| 按键 | 作用 |
+|---|---|
+| `q` / `ESC` | 退出程序并释放摄像头 |
+| `s` | 保存当前画面为 `shot_YYYYMMDD_HHMMSS.jpg` |
 
 ---
 
-## 五、代码说明（16 行）
+## 五、代码说明（34 行）
 
 ```python
+import time
+
 import cv2
 from ultralytics import YOLO
 
 model = YOLO("yolo11n.pt")                 # 预训练模型
 cap = cv2.VideoCapture(0)                  # 0 = 默认摄像头，外接改 1
+t_prev, fps = time.time(), 0.0
 
 while True:
     ok, frame = cap.read()                 # 读一帧
     if not ok:
         break
-    # 检测 + 画框（plot() 自带类别名和置信度）+ 显示
-    cv2.imshow("YOLO", model.predict(frame, conf=0.25, verbose=False)[0].plot())
-    if cv2.waitKey(1) & 0xFF in (ord("q"), 27):   # q / ESC 退出
+
+    img = model.predict(frame, conf=0.25, verbose=False)[0].plot()  # 检测 + 画框
+
+    now = time.time()
+    inst = 1.0 / (now - t_prev)            # 相邻两帧间隔 → 瞬时帧率
+    fps = inst if fps == 0 else fps * 0.9 + inst * 0.1   # 指数平滑，读数更稳
+    t_prev = now
+
+    cv2.putText(img, f"FPS {fps:5.1f}", (12, 34),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2, cv2.LINE_AA)
+    cv2.imshow("YOLO", img)                # q/ESC 退出，s 截图
+
+    key = cv2.waitKey(1) & 0xFF
+    if key in (ord("q"), 27):
         break
+    if key == ord("s"):
+        name = time.strftime("shot_%Y%m%d_%H%M%S.jpg")
+        cv2.imwrite(name, img)
+        print(f"已保存截图 {name}")
 
 cap.release()                              # 释放摄像头
 ```
@@ -146,7 +171,10 @@ cap.release()                              # 释放摄像头
 | `cv2.VideoCapture(0)` | 打开第 0 号摄像头 |
 | `model.predict(...)` | 推理一帧，`conf=0.25` 为置信度阈值 |
 | `results[0].plot()` | **关键**：自动画框、写类别名、写置信度，返回一张新图像 |
-| `cv2.imshow` + `waitKey` | 显示画面并检测按键 |
+| `fps = fps*0.9 + inst*0.1` | 指数平滑，避免读数乱跳 |
+| `cv2.putText` | 在左上角叠加 FPS |
+| `cv2.imshow` + `waitKey` | 显示画面并检测按键（`q` / `ESC` / `s`） |
+| `cv2.imwrite` | 按 `s` 保存截图 |
 | `cap.release()` | 释放摄像头，避免被占用 |
 
 ---
@@ -178,8 +206,9 @@ cap.release()                              # 释放摄像头
    `sudo usermod -aG video $USER`，然后**注销重新登录**。
 3. **Wayland 警告**：运行时可能出现
    `Warning: Ignoring XDG_SESSION_TYPE=wayland on Gnome`，这是 Qt 选择 XWayland 的提示，**可忽略**；若窗口异常，用 `QT_QPA_PLATFORM=xcb python detect.py` 强制走 X11。
-4. **帧率**：CPU 推理 `yolo11n @ 640` 实测 **6–9 FPS**，属正常。想提速可降低输入尺寸
-   `imgsz=320`（约快 2 倍）或换更小的模型。
+4. **帧率**：`detect.py` 不限制采集分辨率（默认 **640×480**），CPU 上实测整循环 **16–30 FPS**，
+   屏幕上显示的是指数平滑后的值。`detect_full.py` 采集 1280×720 时约 **6–9 FPS**。
+   想更快可改小输入尺寸或接独显。
 5. **首次加载慢**：模型加载 + 预热约 1 秒，之后每帧稳定。
 6. **不要用 `sudo` 运行**：会生成 root 所有的文件，且普通用户无法连接显示服务。
 7. **外接摄像头**：把 `cap = cv2.VideoCapture(0)` 里的 `0` 改成 `1`（或 `2`），
@@ -192,10 +221,12 @@ cap.release()                              # 释放摄像头
 | 指标 | 实测值 |
 |---|---|
 | 模型加载 + 预热 | 0.83 s |
-| 推理帧率（CPU，640 尺寸） | **6–9 FPS** |
-| 处理 15 帧总耗时 | 4.7 s |
-| 典型检出 | `person 0.78`、`book 0.47`、`laptop`、`chair` 等 |
-| 摄像头采集分辨率 | 1280×720（`/dev/video0`） |
+| 采集分辨率（`detect.py` 默认） | 640×480 |
+| 整循环帧率（CPU，30 帧平均） | **16.6 FPS** |
+| 单帧耗时构成 | 读帧 0.3–40 ms、推理 20–56 ms |
+| 采集 1280×720 时（`detect_full.py`） | 6–9 FPS |
+| 典型检出 | `person 0.83`、`person 0.76`、`book 0.30` 等 |
+| 截图（按 `s`） | 640×480 JPG，约 105 KB |
 | 退出行为 | `q` / `ESC` 正常退出，摄像头立即释放 |
 
 ![运行效果](assets/demo.jpg)
