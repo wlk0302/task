@@ -26,7 +26,7 @@
 | 项目 | 版本 |
 |---|---|
 | 操作系统 | **Ubuntu 22.04.5 LTS**（x86_64，glibc 2.35） |
-| Python | **3.11.18**（conda 环境 `task`） |
+| Python | **3.11.x**（实测 3.11.18，conda 环境 `task`） |
 | PyTorch | **2.15.0+cpu**（CPU 版） |
 | TorchVision | 0.29.2+cpu |
 | Ultralytics | **8.4.194** |
@@ -73,17 +73,29 @@ conda env create -f environment.yml
 conda activate task
 ```
 
+> ⚠️ conda 24.9 及以上版本首次使用 `defaults` 频道会要求接受服务条款。
+> 如果报 `CondaToSNonInteractiveError`，先执行：
+> ```bash
+> conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+> conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+> ```
+
 ### 2. 安装依赖
+
+**国内网络请务必加清华源**（实测：不加会卡在依赖解析 10 分钟以上）：
+
+```bash
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+能直连 PyPI 的网络可以去掉 `-i` 参数：
 
 ```bash
 pip install -r requirements.txt
 ```
 
-国内网络可加清华源加速：
-
-```bash
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-```
+> `requirements.txt` 里用 `--extra-index-url` 指向了 PyTorch 官方 CPU 源，
+> 因为 `torch==2.15.0+cpu` 这种 `+cpu` 构建只存在于该源；清华源负责其余普通包。
 
 > `requirements.txt` 里已通过 `--extra-index-url` 指向 PyTorch 官方 CPU 源，
 > 因为 `torch==2.15.0+cpu` 这种 `+cpu` 构建只存在于该源，PyPI 上没有。
@@ -249,6 +261,8 @@ cap.release()                              # 释放摄像头
 | 摄像头权限不足 | `Permission denied` | `sudo usermod -aG video $USER` 后重新登录 |
 | 画面黑屏 / 窗口闪退 | Wayland 下 Qt 异常 | `QT_QPA_PLATFORM=xcb python detect.py` |
 | 模型下载失败 | 卡住或 `URLError` / 超时 | 用 `./download_model.sh` 或从 `ghproxy.net`、`hf-mirror.com` 手动下载 |
+| `pip install` 卡住不动 | 依赖解析阶段长时间无输出（官方 PyPI 慢） | 加清华源：`-i https://pypi.tuna.tsinghua.edu.cn/simple`，可先 `Ctrl+C` 中断重来 |
+| `CondaToSNonInteractiveError` | conda 24.9+ 未接受服务条款 | 按「快速开始」里的 `conda tos accept` 两条命令执行 |
 | 帧率太低 | 只有几 FPS | 改 `imgsz=320`；换 `yolo11n`；接独显装 CUDA 版 PyTorch |
 | `ModuleNotFoundError: cv2` | 找不到模块 | 环境没激活，执行 `conda activate task` |
 | `QFontDatabase` 警告刷屏 | OpenCV 5 找不到 Qt 字体 | 无害；可软链字体到 `site-packages/cv2/qt/fonts/`（`run.sh` 已自动处理） |
@@ -259,7 +273,7 @@ cap.release()                              # 释放摄像头
 
 ## 十、依赖说明
 
-### `requirements.txt`（pip，版本已锁定）
+### `requirements.txt`（pip）
 
 ```text
 --extra-index-url https://download.pytorch.org/whl/cpu
@@ -268,8 +282,11 @@ torch==2.15.0+cpu
 torchvision==0.29.2+cpu
 ultralytics==8.4.194
 opencv-python==5.0.0.93
-numpy==2.4.6
+numpy>=2.0,<3
 ```
+
+> 三个关键包锁定精确版本以保证可复现；`numpy` 只限定大版本，
+> 因为它是间接依赖，锁死补丁号容易在镜像未同步时回落到慢速官方源而超时。
 
 ### `environment.yml`（conda，只定义 Python 与 pip）
 

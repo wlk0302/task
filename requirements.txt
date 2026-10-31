@@ -1,13 +1,17 @@
-# 依赖清单（已在 conda 环境 task 中实测通过）
+# 依赖清单（已在干净 conda 环境中实测通过）
 #
 # 安装方式（先 conda 建环境，再 pip 装依赖）：
 #   conda create -n task python=3.11 -y
 #   conda activate task
-#   pip install -r requirements.txt
+#   pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 #
-# 说明：CPU 版 torch 的 +cpu 构建只存在于 PyTorch 官方索引，
-#       所以下面用 extra-index-url 指向它；如果你有 NVIDIA 显卡，
-#       把地址换成 .../whl/cu121 并把版本号里的 +cpu 去掉即可。
+# 说明：
+#   * torch 的 +cpu 构建只存在于 PyTorch 官方索引，故用 extra-index-url 指向该源；
+#     -i 指定的镜像负责其余普通包。
+#   * numpy 不锁死补丁版本：它由 ultralytics / opencv 间接依赖，
+#     锁死容易在镜像未同步时回落到慢速官方源导致超时。
+#   * 有 NVIDIA 显卡时，改用：
+#     pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 
 --extra-index-url https://download.pytorch.org/whl/cpu
 
@@ -15,4 +19,4 @@ torch==2.15.0+cpu
 torchvision==0.29.2+cpu
 ultralytics==8.4.194
 opencv-python==5.0.0.93
-numpy==2.4.6
+numpy>=2.0,<3
