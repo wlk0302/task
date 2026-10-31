@@ -2,7 +2,7 @@
 
 基于 **Ultralytics YOLO11** 的极简实时检测项目：打开电脑摄像头，实时框出画面里的物品，标注**类别**与**置信度**，按 `q` / `ESC` 即可退出。
 
-核心代码只有 **34 行**（含实时 FPS 与截图），适合学习 YOLO 推理流程、做课程作业或二次开发。
+核心代码只有 **38 行**（含实时 FPS、截图与摄像头选择），适合学习 YOLO 推理流程、做课程作业或二次开发。
 
 ![运行效果](assets/demo.jpg)
 
@@ -13,6 +13,7 @@
 ## 一、功能
 
 - ✅ 调用电脑**内置摄像头**或**外接 USB 摄像头**，实时读取视频画面
+- ✅ 命令行指定摄像头编号：`python detect.py 1`
 - ✅ 使用 **YOLO11n 预训练模型**检测画面中的常见物品（COCO 80 类）
 - ✅ 绘制**检测框 + 类别名 + 置信度**
 - ✅ 左上角实时显示 **FPS**（指数平滑，读数稳定）
@@ -44,7 +45,7 @@
 
 ```
 .
-├── detect.py            # 主程序（34 行）
+├── detect.py            # 主程序（38 行）
 ├── detect_full.py       # 完整版：命令行参数 / 录像 / 类别过滤 / 无窗口模式
 ├── run.sh               # 一键启动（自动激活 conda 环境）
 ├── download_model.sh    # 下载模型权重（官方源失败自动切镜像）
@@ -108,13 +109,15 @@ curl -L -o yolo11n.pt \
 ### 4. 运行
 
 ```bash
-python detect.py
+python detect.py          # 默认摄像头 0
+python detect.py 1        # 使用 1 号摄像头（外接 USB 摄像头）
 ```
 
-或使用一键脚本（自动激活环境）：
+或使用一键脚本（自动激活环境，参数同样透传）：
 
 ```bash
 ./run.sh
+./run.sh 1                # 等价于 python detect.py 1
 ```
 
 **快捷键**：
@@ -126,16 +129,20 @@ python detect.py
 
 ---
 
-## 五、代码说明（34 行）
+## 五、代码说明（38 行）
 
 ```python
+import sys
 import time
 
 import cv2
 from ultralytics import YOLO
 
 model = YOLO("yolo11n.pt")                 # 预训练模型
-cap = cv2.VideoCapture(0)                  # 0 = 默认摄像头，外接改 1
+cam = int(sys.argv[1]) if len(sys.argv) > 1 else 0   # 摄像头编号，默认 0
+cap = cv2.VideoCapture(cam)
+if not cap.isOpened():
+    sys.exit(f"无法打开摄像头 {cam}（可能被占用或不存在），可试编号 0 / 1 / 2")
 t_prev, fps = time.time(), 0.0
 
 while True:
@@ -168,7 +175,9 @@ cap.release()                              # 释放摄像头
 | 步骤 | 说明 |
 |---|---|
 | `YOLO("yolo11n.pt")` | 加载模型；文件不存在时会自动联网下载 |
-| `cv2.VideoCapture(0)` | 打开第 0 号摄像头 |
+| `sys.argv[1]` | 可选参数，指定摄像头编号（默认 0） |
+| `cv2.VideoCapture(cam)` | 打开对应编号的摄像头 |
+| `cap.isOpened()` | 打不开时输出中文提示并退出，避免静默失败 |
 | `model.predict(...)` | 推理一帧，`conf=0.25` 为置信度阈值 |
 | `results[0].plot()` | **关键**：自动画框、写类别名、写置信度，返回一张新图像 |
 | `fps = fps*0.9 + inst*0.1` | 指数平滑，避免读数乱跳 |
@@ -211,8 +220,9 @@ cap.release()                              # 释放摄像头
    想更快可改小输入尺寸或接独显。
 5. **首次加载慢**：模型加载 + 预热约 1 秒，之后每帧稳定。
 6. **不要用 `sudo` 运行**：会生成 root 所有的文件，且普通用户无法连接显示服务。
-7. **外接摄像头**：把 `cap = cv2.VideoCapture(0)` 里的 `0` 改成 `1`（或 `2`），
-   或用完整版 `python detect_full.py --list-cameras` 扫描可用编号。
+7. **外接摄像头**：直接传编号即可，例如 `python detect.py 1`；不知道编号时用完整版
+   `python detect_full.py --list-cameras` 扫描可用编号。
+8. **摄像头打不开时**程序会直接提示 `无法打开摄像头 N`，不会静默退出。
 
 ---
 

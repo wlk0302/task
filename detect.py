@@ -1,10 +1,14 @@
+import sys
 import time
 
 import cv2
 from ultralytics import YOLO
 
 model = YOLO("yolo11n.pt")                 # 预训练模型
-cap = cv2.VideoCapture(0)                  # 0 = 默认摄像头，外接改 1
+cam = int(sys.argv[1]) if len(sys.argv) > 1 else 0   # 摄像头编号，默认 0
+cap = cv2.VideoCapture(cam)
+if not cap.isOpened():
+    sys.exit(f"无法打开摄像头 {cam}（可能被占用或不存在），可试编号 0 / 1 / 2")
 t_prev, fps = time.time(), 0.0
 
 while True:
