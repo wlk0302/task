@@ -1,0 +1,43 @@
+# ===== Python 缓存 =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ===== 虚拟环境（conda / venv）=====
+.venv/
+venv/
+env/
+envs/
+conda-meta/
+pyvenv.cfg
+
+# ===== 模型权重（体积大，按 README 下载）=====
+*.pt
+*.pth
+*.onnx
+*.engine
+*.trt
+
+# ===== 运行产物 =====
+*.mp4
+*.avi
+runs/
+output/
+predict*/
+*.log
+
+# ===== 编辑器 / 系统 =====
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ===== 本地配置 / 密钥 =====
+.env
+*.local

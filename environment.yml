@@ -1,0 +1,20 @@
+# conda 环境定义
+# ---------------------------------------------------------------
+# 用法：
+#   conda env create -f environment.yml
+#   conda activate task
+#   pip install -r requirements.txt
+#
+# 说明：PyTorch 的 CPU 专用构建（版本号带 +cpu）只存在于
+#       https://download.pytorch.org/whl/cpu 这个 wheel 源里，
+#       conda 频道没有对应包，所以这里只声明 Python 与 pip，
+#       其余 Python 依赖交给 requirements.txt 安装。
+# ---------------------------------------------------------------
+name: task
+
+channels:
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
