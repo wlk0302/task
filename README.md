@@ -291,25 +291,10 @@ dependencies:
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 ```
 
-并把 `requirements.txt` 中的 `+cpu` 版本号去掉。
+并把 `requirements.txt` 中的 `+cpu` 版本号去掉
 
 ---
 
-## 十一、完整版功能（可选）
-
-`detect_full.py` 在极简版基础上增加了：
-
-```bash
-python detect_full.py --list-cameras        # 扫描可用摄像头
-python detect_full.py --source 1            # 指定摄像头
-python detect_full.py --source video.mp4    # 读视频文件
-python detect_full.py --save out.mp4        # 录制结果
-python detect_full.py --classes 0           # 只检测人
-python detect_full.py --no-show             # 无窗口，仅终端输出
-```
-
----
-
-## 十二、许可
+## 十一、许可
 
 本项目仅用于学习交流。模型权重版权归 [Ultralytics](https://github.com/ultralytics/ultralytics) 所有（AGPL-3.0）。
