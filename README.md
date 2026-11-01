@@ -17,7 +17,6 @@
 - ✅ 左上角实时显示 **FPS**（指数平滑，读数稳定）
 - ✅ 按 `s` 一键**截图**，保存为 `shot_时间戳.jpg`
 - ✅ 按 `q` / `ESC` **正常退出**，自动释放摄像头
-- ✅ 额外提供完整版 `detect_full.py`：支持指定摄像头编号、读视频文件、录制结果、按类别过滤
 
 ---
 
@@ -44,10 +43,9 @@
 ```
 .
 ├── detect.py            # 主程序（38 行）
-├── detect_full.py       # 完整版：命令行参数 / 录像 / 类别过滤 / 无窗口模式
 ├── run.sh               # 一键启动（自动激活 conda 环境）
 ├── download_model.sh    # 下载模型权重（官方源失败自动切镜像）
-├── requirements.txt     # pip 依赖清单（版本锁定）
+├── requirements.txt     # pip 依赖清单（主要包锁定版本）
 ├── environment.yml      # conda 环境定义
 ├── .gitignore           # 忽略虚拟环境、缓存、权重等
 ├── assets/
@@ -225,13 +223,12 @@ cap.release()                              # 释放摄像头
    `sudo usermod -aG video $USER`，然后**注销重新登录**。
 3. **Wayland 警告**：运行时可能出现
    `Warning: Ignoring XDG_SESSION_TYPE=wayland on Gnome`，这是 Qt 选择 XWayland 的提示，**可忽略**；若窗口异常，用 `QT_QPA_PLATFORM=xcb python detect.py` 强制走 X11。
-4. **帧率**：`detect.py` 不限制采集分辨率（默认 **640×480**），CPU 上实测整循环 **16–30 FPS**，
-   屏幕上显示的是指数平滑后的值。`detect_full.py` 采集 1280×720 时约 **6–9 FPS**。
-   想更快可改小输入尺寸或接独显。
+4. **帧率**：`detect.py` 默认采集 **640×480**，CPU 上实测整循环 **16–30 FPS**，
+   屏幕上显示的是指数平滑后的值。想更快可改小输入尺寸或接独显。
 5. **首次加载慢**：模型加载 + 预热约 1 秒，之后每帧稳定。
 6. **不要用 `sudo` 运行**：会生成 root 所有的文件，且普通用户无法连接显示服务。
-7. **外接摄像头**：直接传编号即可，例如 `python detect.py 1`；不知道编号时用完整版
-   `python detect_full.py --list-cameras` 扫描可用编号。
+7. **外接摄像头**：直接传编号即可，例如 `python detect.py 1`；不知道编号时依次试 `0`、`1`，
+   或用 `ls /dev/video*` 查看设备。
 8. **摄像头打不开时**程序会直接提示 `无法打开摄像头 N`，不会静默退出。
 
 ---
@@ -244,7 +241,6 @@ cap.release()                              # 释放摄像头
 | 采集分辨率（`detect.py` 默认） | 640×480 |
 | 整循环帧率（CPU，30 帧平均） | **16.6 FPS** |
 | 单帧耗时构成 | 读帧 0.3–40 ms、推理 20–56 ms |
-| 采集 1280×720 时（`detect_full.py`） | 6–9 FPS |
 | 典型检出 | `person 0.83`、`person 0.76`、`book 0.30` 等 |
 | 截图（按 `s`） | 640×480 JPG，约 105 KB |
 | 退出行为 | `q` / `ESC` 正常退出，摄像头立即释放 |
@@ -257,7 +253,7 @@ cap.release()                              # 释放摄像头
 
 | 问题 | 现象 | 解决办法 |
 |---|---|---|
-| 摄像头打不开 | 程序秒退或黑屏 | 关闭占用摄像头的软件；`ls -l /dev/video*` 确认设备；完整版用 `--list-cameras` 扫描 |
+| 摄像头打不开 | 程序秒退或黑屏 | 关闭占用摄像头的软件；`ls -l /dev/video*` 确认设备；依次尝试编号 0 / 1 / 2 |
 | 摄像头权限不足 | `Permission denied` | `sudo usermod -aG video $USER` 后重新登录 |
 | 画面黑屏 / 窗口闪退 | Wayland 下 Qt 异常 | `QT_QPA_PLATFORM=xcb python detect.py` |
 | 模型下载失败 | 卡住或 `URLError` / 超时 | 用 `./download_model.sh` 或从 `ghproxy.net`、`hf-mirror.com` 手动下载 |
