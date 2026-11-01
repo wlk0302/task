@@ -311,3 +311,8 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 ## 十一、许可
 
 本项目仅用于学习交流。模型权重版权归 [Ultralytics](https://github.com/ultralytics/ultralytics) 所有（AGPL-3.0）。
+##十二`学习笔记
+<img width="3072" height="4096" alt="IMG_20261101_170809" src="https://github.com/user-attachments/assets/8d45141f-2ff2-4065-8f87-89ce4325bb5b" />
+<img width="3072" height="4096" alt="IMG_20261101_170813" src="https://github.com/user-attachments/assets/7bdf7140-94a2-4099-b8b7-72306aa941c2" />
+<img width="3072" height="4096" alt="IMG_20261101_170804" src="https://github.com/user-attachments/assets/bb87b1c5-ad60-4738-87bf-6c7179ca4154" />
+
